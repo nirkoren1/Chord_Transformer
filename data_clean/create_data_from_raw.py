@@ -95,15 +95,15 @@ def generate_training_data(df_: pd.DataFrame):
 
 if __name__ == '__main__':
     # prepare data
-    # df = pd.read_csv(file_path)
-    # out_df = pd.DataFrame()
-    # out_df["genres"] = parse_genres(df["genres"])
-    # out_df["popularity"] = df["popularity"]
-    # out_df["chords"] = get_all_chords(df["chords"])
-    # out_df = out_df.dropna(axis=0, how='any')
-    # out_df["training_data"] = generate_training_data(out_df)
-    # print(out_df.head())
-    # out_df.to_pickle("data.pickle")
+    df = pd.read_csv(file_path)
+    out_df = pd.DataFrame()
+    out_df["genres"] = parse_genres(df["genres"])
+    out_df["popularity"] = df["popularity"]
+    out_df["chords"] = get_all_chords(df["chords"])
+    out_df = out_df.dropna(axis=0, how='any')
+    out_df["training_data"] = generate_training_data(out_df)
+    print(out_df.head())
+    out_df.to_pickle("data.pickle")
 
     # prepare 1hot encoding
     df = pd.read_pickle("data.pickle")

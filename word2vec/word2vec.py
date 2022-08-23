@@ -70,30 +70,30 @@ if __name__ == '__main__':
     # create_data()
 
     # train the network
-    # with open("x.pickle", 'rb') as f:
-    #     x = pickle.load(f)
-    # with open("y.pickle", 'rb') as f:
-    #     y = pickle.load(f)
-    # embed_size = 183
-    # batch_size = 16
-    # epochs = 1000
-    # model = SkipGram(dic_size, embed_size)
-    # model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
-    # for i in range(epochs):
-    #     print('\r', f"epoch {i + 1}/{epochs} ", end="")
-    #     batch = np.random.choice(x_size, batch_size)
-    #     x_batch = x[batch]
-    #     y_batch = y[batch]
-    #     model.learn(x_batch, y_batch)
-    # print()
-    #
-    # embeddings_dict = {}
-    # for idx, word in enumerate(list(hash_chords.keys())):
-    #     print("\r", f"{idx}/{dic_size}", end="")
-    #     embeddings_dict[word] = np.array(model.fc1.weights[0])[idx]
-    # print()
-    # with open("embeddings.pickle", 'wb') as f:
-    #     pickle.dump(embeddings_dict, f)
+    with open("x.pickle", 'rb') as f:
+        x = pickle.load(f)
+    with open("y.pickle", 'rb') as f:
+        y = pickle.load(f)
+    embed_size = 256
+    batch_size = 16
+    epochs = 1000
+    model = SkipGram(dic_size, embed_size)
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error')
+    for i in range(epochs):
+        print('\r', f"epoch {i + 1}/{epochs} ", end="")
+        batch = np.random.choice(x_size, batch_size)
+        x_batch = x[batch]
+        y_batch = y[batch]
+        model.learn(x_batch, y_batch)
+    print()
+
+    embeddings_dict = {}
+    for idx, word in enumerate(list(hash_chords.keys())):
+        print("\r", f"{idx}/{dic_size}", end="")
+        embeddings_dict[word] = np.array(model.fc1.weights[0])[idx]
+    print()
+    with open("embeddings.pickle", 'wb') as f:
+        pickle.dump(embeddings_dict, f)
 
     # evaluate result
     with open("embeddings.pickle", 'rb') as f:
