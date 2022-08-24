@@ -1,21 +1,24 @@
 from abc import ABC
 import tensorflow as tf
 import tensorflow.keras as keras
-from tensorflow.keras.layers import Dense, LayerNormalization
+from tensorflow.keras.layers import Dense, LayerNormalization, Dropout
 from tensorflow.keras.optimizers import Adam
 from keras import backend as back
 
 
 class FeedForward(keras.Model, ABC):
-    def __init__(self, embedding_size):
+    def __init__(self, embedding_size, dropout_rate=0.1):
         super(FeedForward, self).__init__()
         self.fc1 = Dense(embedding_size * 4, activation='relu')
         self.fc2 = Dense(embedding_size)
         self.normalize = LayerNormalization(axis=1, center=True, scale=True, epsilon=0.0001)
+        self.dropout = Dropout(dropout_rate)
 
-    def feed_forward(self, input_):
+    def feed_forward(self, input_, training=False):
         result = self.fc1(input_)
         result = self.fc2(result)
+        if training:
+            self.dropout(result)
         result = tf.add(result, input_)
         result = self.normalize(result)
         return result

@@ -13,11 +13,11 @@ class Encoder(keras.Model, ABC):
         self.multi_heads = [MultiHeadAttention(embedding_size, h) for i in range(N)]
         self.feed_forwards = [FeedForward(embedding_size) for i in range(N)]
 
-    def feed_forward(self, input_):
+    def feed_forward(self, input_, training):
         result = input_
         for i in range(self.N):
-            result = self.multi_heads[i].feed_forward(result, result, result)
-            result = self.feed_forwards[i].feed_forward(result)
+            result = self.multi_heads[i].feed_forward(result, result, result, training)
+            result = self.feed_forwards[i].feed_forward(result, training)
         return result
 
 
