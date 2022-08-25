@@ -22,7 +22,9 @@ class Transformer(keras.Model, ABC):
 
     def loss_function(self, target, pred):
         mask = tf.math.logical_not(tf.math.equal(target, 0))
-        loss_ = self.loss_object(target, pred)
+        print(tf.squeeze(target))
+        print(pred)
+        loss_ = self.loss_object(tf.squeeze(target), pred)
 
         mask = tf.cast(mask, dtype=loss_.dtype)
         loss_ *= mask
@@ -35,13 +37,14 @@ class Transformer(keras.Model, ABC):
         true_output = tf.convert_to_tensor(true_output, dtype=tf.float32)
         with tf.GradientTape(persistent=True) as tape:
             guess = self.feed_forward(encoder_input, decoder_input, training=True)
-            true_output = tf.reshape(true_output, (-1, self.shape[0], self.shape[1], 1))
-            loss = self.loss_function(true_output, guess)
+            # true_output = tf.reshape(true_output, (-1, true_output.shape[0]))
+            # loss = self.loss_function(true_output, guess)
+            loss = tf.losses.SparseCategoricalCrossentropy()(true_output, guess)
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         self.train_accuracy(true_output, guess)
         if print_acc:
-            print("acc: ", self.train_accuracy.result())
+            print("loss: ", loss)
 
 
 if __name__ == '__main__':

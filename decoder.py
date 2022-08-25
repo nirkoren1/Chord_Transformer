@@ -4,6 +4,8 @@ from keras.layers import Flatten, Dense
 from attention import MultiHeadAttention
 from feedforward import FeedForward
 import tensorflow as tf
+import numpy as np
+
 
 class Decoder(keras.Model, ABC):
     def __init__(self, embedding_size, h, dict_size, N=6, *args, **kwargs):
@@ -21,7 +23,7 @@ class Decoder(keras.Model, ABC):
             result = self.multi_heads_masked[i].feed_forward(result, result, result, training)
             result = self.multi_heads[i].feed_forward(result, encoder_output, encoder_output, training)
             result = self.feed_forwards[i].feed_forward(result, training)
-        result = tf.reshape(result, [1, result.shape[0] * result.shape[1]])
+        result = tf.reshape(result, [result.shape[0], result.shape[1] * result.shape[2]])
         result = self.fc(result)
         return result
 

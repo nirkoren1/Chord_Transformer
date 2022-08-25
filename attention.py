@@ -18,7 +18,7 @@ class AttentionHead(keras.Model, ABC):
         QK = tf.linalg.matmul(q, k, transpose_b=True)
         QK = tf.scalar_mul(1 / self.dk, QK)
         mask = tf.cast(tf.math.equal(QK, 0), tf.float32)
-        mask = mask[:, tf.newaxis, tf.newaxis, :]
+        mask = tf.squeeze(mask[:, tf.newaxis, tf.newaxis, :])
         QK = tf.add(QK, tf.scalar_mul(-np.inf, mask))
         if self.mask == "look_ahead":
             mask_ahead = np.array([[[0. if i >= j else -np.inf for j in range(QK.shape[2])] for i in range(QK.shape[1])] for k in range(QK.shape[0])])
@@ -50,7 +50,7 @@ class MultiHeadAttention(keras.Model, ABC):
         keys = tf.split(k, self.h, axis=2)
         value = tf.split(v, self.h, axis=2)
         results = [head.feed_forward(self.query_weights[i](query[i]), self.keys_weights[i](keys[i]), self.value_weights[i](value[i])) for i, head in enumerate(self.heads)]
-        result = tf.concat(results, 1)
+        result = tf.concat(results, 2)
         result = self.fc(result)
         if training:
             result = self.dropout(result)
