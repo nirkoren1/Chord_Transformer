@@ -6,30 +6,42 @@ from decoder import Decoder
 import tensorflow as tf
 
 
-def position_encoding(pos, i, embedding_size):
-    if i % 2 == 0:
-        return np.sin(pos / (10000 ** (2 * i / embedding_size)))
-    return np.cos(pos / (10000 ** (2 * i / embedding_size)))
-
-
 class Transformer(keras.Model, ABC):
     def __init__(self, embedding_size, h, dict_size, padding_size, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.padding_size = padding_size
         self.encoder = Encoder(embedding_size, h)
         self.decoder = Decoder(embedding_size, h, dict_size)
-        self.position_encoding = np.array([[position_encoding(i, j, embedding_size) for j in range(embedding_size)] for i in range(padding_size)])
+        self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name="train_accuracy")
+        self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction="none")
 
     def feed_forward(self, x, y, training=False):
-        x = tf.add(x, self.position_encoding[:x.shape[0]][:x.shape[1]])
-        y = tf.add(y, self.position_encoding[:y.shape[0]][:y.shape[1]])
-        paddings = [[0, self.padding_size - x.shape[0]], [0, 0]]
-        x = tf.pad(x, paddings)
-        paddings = [[0, self.padding_size - y.shape[0]], [0, 0]]
-        y = tf.pad(y, paddings)
         encoder_output = self.encoder.feed_forward(x, training)
         prediction = self.decoder.feed_forward(y, encoder_output, training)
         return prediction
+
+    def loss_function(self, target, pred):
+        mask = tf.math.logical_not(tf.math.equal(target, 0))
+        loss_ = self.loss_object(target, pred)
+
+        mask = tf.cast(mask, dtype=loss_.dtype)
+        loss_ *= mask
+
+        return tf.reduce_mean(loss_)
+
+    def learn(self, encoder_input, decoder_input, true_output, print_acc):
+        encoder_input = tf.convert_to_tensor(encoder_input, dtype=tf.float32)
+        decoder_input = tf.convert_to_tensor(decoder_input, dtype=tf.float32)
+        true_output = tf.convert_to_tensor(true_output, dtype=tf.float32)
+        with tf.GradientTape(persistent=True) as tape:
+            guess = self.feed_forward(encoder_input, decoder_input, training=True)
+            true_output = tf.reshape(true_output, (-1, self.shape[0], self.shape[1], 1))
+            loss = self.loss_function(true_output, guess)
+        gradients = tape.gradient(loss, self.trainable_variables)
+        self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
+        self.train_accuracy(true_output, guess)
+        if print_acc:
+            print("acc: ", self.train_accuracy.result())
 
 
 if __name__ == '__main__':
