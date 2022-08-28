@@ -1,5 +1,7 @@
 import pickle
 import random
+from abc import ABC
+import animate
 import numpy as np
 from transformer import Transformer
 import tensorflow as tf
@@ -8,6 +10,20 @@ with open("word2vec/embeddings.pickle", 'rb') as f:
     embeddings = pickle.load(f)
 with open("data_clean/data.pickle", 'rb') as f:
     data = pickle.load(f)
+
+
+class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule, ABC):
+    def __init__(self, d_model, warmup_steps=4000):
+        super(CustomSchedule, self).__init__()
+
+        self.d_model = tf.cast(d_model, tf.float32)
+        self.warmup_steps = warmup_steps
+
+    def __call__(self, step):
+        arg1 = tf.math.rsqrt(step)
+        arg2 = step * (self.warmup_steps ** -1.5)
+
+        return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
 
 def position_encoding(pos, i, embedding_size):
@@ -41,10 +57,11 @@ transformer = Transformer(embeddings_size, h, dict_size, padding_size)
 optimizer = tf.keras.optimizers.Adam(learning_rate=0, beta_1=0.9, beta_2=0.98, epsilon=1e-09)
 transformer.compile(loss='crossentropy', optimizer=optimizer, metrics=['accuracy'])
 batch_size = 8
-x_size = 10000
+x_size = 15000
 validation_size = 1000
 embeddings_list = list(embeddings.keys())
-positions_encoding = np.array([[position_encoding(i, j, embeddings_size) for j in range(embeddings_size)] for i in range(padding_size)])
+positions_encoding = np.array(
+        [[position_encoding(i, j, embeddings_size) for j in range(embeddings_size)] for i in range(padding_size)])
 
 
 encoder_input = []
@@ -64,13 +81,15 @@ print()
 
 
 if __name__ == '__main__':
-    epochs = 100
+    epochs = 3000
     transformer = Transformer(embeddings_size, 8, dict_size, padding_size)
-    transformer.compile(optimizer=tf.keras.optimizers.Adam(beta_1=0.9, beta_2=0.98, epsilon=1e-9))
+    learning_rate = CustomSchedule(embeddings_size, 200)
+    transformer.compile(optimizer=tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9))
     for epoch in range(epochs):
         print(epoch, end=" ")
         encoder_input_batch = random.sample(encoder_input, batch_size)
         decoder_input_batch = random.sample(decoder_input, batch_size)
         true_y_batch = random.sample(true_y, batch_size)
         transformer.learn(encoder_input_batch, decoder_input_batch, true_y_batch, True)
+        animate.update(transformer.get_acc() * 100, "acc_scores")
     transformer.save_weights("weights")

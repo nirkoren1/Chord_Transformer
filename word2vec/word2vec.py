@@ -87,25 +87,25 @@ if __name__ == '__main__':
         model.learn(x_batch, y_batch)
     print()
 
-    embeddings_dict = {}
-    for idx, word in enumerate(list(hash_chords.keys())):
-        print("\r", f"{idx}/{dic_size}", end="")
-        embeddings_dict[word] = np.array(model.fc1.weights[0])[idx]
-    print()
-    with open("embeddings.pickle", 'wb') as f:
-        pickle.dump(embeddings_dict, f)
-
-    # evaluate result
-    with open("embeddings.pickle", 'rb') as f:
-        embeddings = pickle.load(f)
-
-    word1 = "C"
-    similar_words = ["Dm", "Em", "F", "G", "Am"]
-    not_similar_words = ["D", "E", "F#", "G#m", "A"]
-    for word in similar_words:
-        sim1 = 1 - distance.cosine(embeddings[word1], embeddings[word])
-        print(word, sim1, end=" ")
-    print()
-    for word in not_similar_words:
-        sim1 = 1 - distance.cosine(embeddings[word1], embeddings[word])
-        print(word, sim1, end=" ")
+    # embeddings_dict = {}
+    # for idx, word in enumerate(list(hash_chords.keys())):
+    #     print("\r", f"{idx}/{dic_size}", end="")
+    #     embeddings_dict[word] = np.array(model.fc1.weights[0])[idx]
+    # print()
+    # with open("embeddings.pickle", 'wb') as f:
+    #     pickle.dump(embeddings_dict, f)
+    #
+    # # evaluate result
+    # with open("embeddings.pickle", 'rb') as f:
+    #     embeddings = pickle.load(f)
+    #
+    # word1 = "C"
+    # similar_words = ["Dm", "Em", "F", "G", "Am"]
+    # not_similar_words = ["D", "E", "F#", "G#m", "A"]
+    # for word in similar_words:
+    #     sim1 = 1 - distance.cosine(embeddings[word1], embeddings[word])
+    #     print(word, sim1, end=" ")
+    # print()
+    # for word in not_similar_words:
+    #     sim1 = 1 - distance.cosine(embeddings[word1], embeddings[word])
+    #     print(word, sim1, end=" ")
