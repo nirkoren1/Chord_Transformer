@@ -37,10 +37,10 @@ def show_fig(path):
     ax1.set_title('Reward')
     line, = ax1.plot(x, y, 'r', marker='o')
     ax1.set_xlim(-5, len(x) + 5)
-    ax1.set_ylim(min(y) - 10, max(y) + 30)
+    ax1.set_ylim(min(y) - 1, max(y) + 1)
     line.set_data(x, y)
     plt.show()
 
 
 if __name__ == '__main__':
-    show_fig(r"acc_scores")
+    show_fig(r"loss_scores")

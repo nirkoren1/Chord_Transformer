@@ -15,6 +15,6 @@ transformer = Transformer(embeddings_size, 8, dict_size, padding_size)
 transformer.load_weights("weights")
 
 if __name__ == '__main__':
-    input_ = ["pop", "r&b", "<start>", "G", "B"]
+    input_ = ["pop", "r&b", "<start>", "G", "C"]
     input_2 = ["pop", "r&b", "rock", "G", "B"]
     transformer.complete(input_, embeddings)

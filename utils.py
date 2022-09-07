@@ -27,3 +27,21 @@ def to_onehot(token, embeddings):
     dict_size = len(embeddings_list)
     idx = embeddings_list.index(token)
     return np.array([1 if i == idx else 0 for i in range(dict_size)])
+
+
+def look_ahead_mask(tensor):
+    try:
+        mask_ahead = np.array(
+            [[[0. if i >= j else -1e9 for j in range(tensor.shape[2])] for i in range(tensor.shape[1])] for k in
+             range(tensor.shape[0])])
+    except IndexError:
+        mask_ahead = np.array(
+            [[0. if i >= j else -1e9 for j in range(tensor.shape[1])] for i in range(tensor.shape[0])])
+    mask_ahead = tf.cast(mask_ahead, tf.float32)
+    return mask_ahead
+
+
+def padding_mask(tensor):
+    mask = tf.cast(tf.math.equal(tensor, 0), tf.float32)
+    mask = tf.squeeze(mask)
+    return mask

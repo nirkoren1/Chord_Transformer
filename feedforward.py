@@ -6,12 +6,12 @@ from tensorflow.keras.optimizers import Adam
 from keras import backend as back
 
 
-class FeedForward(keras.Model, ABC):
+class FeedForward(keras.layers.Layer, ABC):
     def __init__(self, embedding_size, dropout_rate=0.1):
         super(FeedForward, self).__init__()
         self.fc1 = Dense(embedding_size * 4, activation='relu')
         self.fc2 = Dense(embedding_size)
-        self.normalize = LayerNormalization(axis=1, center=True, scale=True, epsilon=0.0001)
+        self.normalize = LayerNormalization(axis=-1, center=True, scale=True, epsilon=0.0001)
         self.dropout = Dropout(dropout_rate)
 
     def feed_forward(self, input_, training=False):

@@ -7,21 +7,21 @@ import tensorflow as tf
 import numpy as np
 
 
-class Decoder(keras.Model, ABC):
+class Decoder(keras.layers.Layer, ABC):
     def __init__(self, embedding_size, h, dict_size, N=6, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.N = N
-        self.multi_heads_masked = [MultiHeadAttention(embedding_size, h, mask=True) for i in range(N)]
+        self.multi_heads_masked = [MultiHeadAttention(embedding_size, h) for i in range(N)]
         self.multi_heads = [MultiHeadAttention(embedding_size, h) for i in range(N)]
         self.feed_forwards = [FeedForward(embedding_size) for i in range(N)]
         self.flat = keras.layers.Flatten()
         self.fc = Dense(dict_size, activation='softmax')
 
-    def feed_forward(self, input_, encoder_output, training):
+    def feed_forward(self, input_, encoder_output, mask_1, mask_2, training):
         result = input_
         for i in range(self.N):
-            result = self.multi_heads_masked[i].feed_forward(result, result, result, training)
-            result = self.multi_heads[i].feed_forward(result, encoder_output, encoder_output, training)
+            result = self.multi_heads_masked[i].feed_forward(result, result, result, mask_1, training)
+            result = self.multi_heads[i].feed_forward(result, encoder_output, encoder_output, mask_2, training)
             result = self.feed_forwards[i].feed_forward(result, training)
         try:
             result = tf.reshape(result, [result.shape[0], result.shape[1] * result.shape[2]])
