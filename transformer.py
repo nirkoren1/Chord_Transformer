@@ -16,6 +16,8 @@ class Transformer(keras.Model, ABC):
         self.train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy()
         self.loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction="none")
         self.train_loss = tf.keras.metrics.Mean(name="train_loss")
+        self.train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
+        self.epoch_counter = 0
 
     def feed_forward(self, x, y, training=False):
         encoder_output = self.encoder.feed_forward(x, padding_mask(x), training)
@@ -29,12 +31,23 @@ class Transformer(keras.Model, ABC):
         loss_ *= mask
         return tf.reduce_mean(loss_)
 
-    def learn(self, encoder_input, decoder_input, true_output, print_acc):
-        self.train_accuracy.reset_states()
-        self.train_loss.reset_states()
+    def accuracy_function(self, real, pred):
+        accuracies = tf.equal(real, tf.argmax(pred, axis=-1))
+
+        mask = tf.math.logical_not(tf.math.equal(real, 0))
+        accuracies = tf.math.logical_and(mask, accuracies)
+
+        accuracies = tf.cast(accuracies, dtype=tf.float32)
+        mask = tf.cast(mask, dtype=tf.float32)
+        return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
+
+    def learn(self, encoder_input, decoder_input, true_output, print_acc, reset_metrics_every=50):
+        if self.epoch_counter % reset_metrics_every == 0:
+            self.train_accuracy.reset_states()
+            self.train_loss.reset_states()
         encoder_input = tf.convert_to_tensor(encoder_input, dtype=tf.float32)
         decoder_input = tf.convert_to_tensor(decoder_input, dtype=tf.float32)
-        true_output = tf.convert_to_tensor(true_output, dtype=tf.float32)
+        true_output = tf.convert_to_tensor(true_output, dtype=tf.int64)
         with tf.GradientTape(persistent=True) as tape:
             guess = self.feed_forward(encoder_input, decoder_input, training=True)
             # true_output = tf.reshape(true_output, (-1, true_output.shape[0]))
@@ -42,10 +55,11 @@ class Transformer(keras.Model, ABC):
             # loss = self.loss_object(true_output, guess)
         gradients = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
-        self.train_accuracy(true_output, guess)
+        self.train_accuracy(self.accuracy_function(true_output, guess))
         self.train_loss(loss)
         if print_acc:
             print("loss: ", self.train_loss.result(), self.train_accuracy.result())
+        self.epoch_counter += 1
 
     def complete(self, input_, embeddings, max_output_len=40):
         dictionary_list = list(embeddings.keys())

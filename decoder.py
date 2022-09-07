@@ -23,10 +23,7 @@ class Decoder(keras.layers.Layer, ABC):
             result = self.multi_heads_masked[i].feed_forward(result, result, result, mask_1, training)
             result = self.multi_heads[i].feed_forward(result, encoder_output, encoder_output, mask_2, training)
             result = self.feed_forwards[i].feed_forward(result, training)
-        try:
-            result = tf.reshape(result, [result.shape[0], result.shape[1] * result.shape[2]])
-        except IndexError:
-            result = tf.reshape(result, [1, result.shape[0] * result.shape[1]])
+        result = self.flat(result)
         result = self.fc(result)
         return result
 

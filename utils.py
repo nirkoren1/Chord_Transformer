@@ -32,11 +32,11 @@ def to_onehot(token, embeddings):
 def look_ahead_mask(tensor):
     try:
         mask_ahead = np.array(
-            [[[0. if i >= j else -1e9 for j in range(tensor.shape[2])] for i in range(tensor.shape[1])] for k in
+            [[[0. if i >= j else 1 for j in range(tensor.shape[2])] for i in range(tensor.shape[1])] for k in
              range(tensor.shape[0])])
     except IndexError:
         mask_ahead = np.array(
-            [[0. if i >= j else -1e9 for j in range(tensor.shape[1])] for i in range(tensor.shape[0])])
+            [[0. if i >= j else 1 for j in range(tensor.shape[1])] for i in range(tensor.shape[0])])
     mask_ahead = tf.cast(mask_ahead, tf.float32)
     return mask_ahead
 
