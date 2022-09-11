@@ -4,8 +4,8 @@ from matplotlib import style
 
 style.use('fivethirtyeight')
 
-xar = []
-yar = []
+xar = [[] for _ in range(5)]
+yar = [[] for _ in range(5)]
 
 
 def write_list(a_list, path):
@@ -14,11 +14,11 @@ def write_list(a_list, path):
         pickle.dump(a_list, fp)
 
 
-def update(y, path):
-    yar.append(y)
-    xar.append(len(yar))
-    write_list(xar, path + "\\xar")
-    write_list(yar, path + "\\yar")
+def update(y, path, id):
+    yar[id].append(y)
+    xar[id].append(len(yar[id]))
+    write_list(xar[id], path + "\\xar")
+    write_list(yar[id], path + "\\yar")
 
 
 def read_list(path):
@@ -33,14 +33,14 @@ def show_fig(path):
     y = read_list(path + "\\yar")
     fig1 = plt.figure(figsize=(6, 4.5), dpi=100)
     ax1 = fig1.add_subplot(1, 1, 1)
-    ax1.set_ylim(0, 110)
     ax1.set_title('Reward')
     line, = ax1.plot(x, y, 'r', marker='o')
-    ax1.set_xlim(-5, len(x) + 5)
-    ax1.set_ylim(min(y) - 1, max(y) + 1)
+    ax1.set_xlim(min(x), len(x) + 5)
+    ax1.set_ylim(min(y), max(y))
     line.set_data(x, y)
     plt.show()
 
 
 if __name__ == '__main__':
     show_fig(r"loss_scores")
+    show_fig(r"acc_scores")

@@ -1,4 +1,4 @@
-import pickle
+import pickle5
 import random
 from abc import ABC
 import animate
@@ -10,9 +10,9 @@ import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 with open("word2vec/embeddings.pickle", 'rb') as f:
-    embeddings = pickle.load(f)
+    embeddings = pickle5.load(f)
 with open("data_clean/data.pickle", 'rb') as f:
-    data = pickle.load(f)
+    data = pickle5.load(f)
 
 
 class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule, ABC):
@@ -56,7 +56,7 @@ dict_size = len(embeddings)
 print("dict size: ", dict_size)
 h = 8
 batch_size = 8
-x_size = 1_000
+x_size = 20_000
 validation_size = 1000
 embeddings_list = list(embeddings.keys())
 positions_encoding = np.array(
@@ -80,15 +80,20 @@ print()
 
 
 if __name__ == '__main__':
-    epochs = 3000
+    epochs = 100_000
     transformer = Transformer(embeddings_size, 8, dict_size, padding_size)
-    learning_rate = CustomSchedule(embeddings_size, 1000)
+    learning_rate = CustomSchedule(embeddings_size, 4000)
     transformer.compile(optimizer=tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98, epsilon=1e-9))
+    best_acc = 0
     for epoch in range(epochs):
         print(epoch, end=" ")
         encoder_input_batch = random.sample(encoder_input, batch_size)
         decoder_input_batch = random.sample(decoder_input, batch_size)
         true_y_batch = random.sample(true_y, batch_size)
         transformer.learn(encoder_input_batch, decoder_input_batch, true_y_batch, True)
-        animate.update(transformer.get_loss(), "loss_scores")
-    transformer.save_weights("weights")
+        animate.update(transformer.get_loss_moving_avg(), "loss_scores", 0)
+        animate.update(transformer.get_acc_moving_avg(), "acc_scores", 1)
+        if transformer.get_acc_moving_avg() > best_acc and epoch % 10 == 0:
+            best_acc = transformer.get_acc_moving_avg()
+            print(f"saving model with acc of {best_acc}")
+            transformer.save_weights("weights")

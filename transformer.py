@@ -18,10 +18,13 @@ class Transformer(keras.Model, ABC):
         self.train_loss = tf.keras.metrics.Mean(name="train_loss")
         self.train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
         self.epoch_counter = 0
+        self.accuracies = []
+        self.losses_ = []
 
     def feed_forward(self, x, y, training=False):
-        encoder_output = self.encoder.feed_forward(x, padding_mask(x), training)
-        prediction = self.decoder.feed_forward(y, encoder_output, tf.math.maximum(padding_mask(y), look_ahead_mask(y)), padding_mask(x), training)
+        x_mask = padding_mask(x)
+        encoder_output = self.encoder.feed_forward(x, x_mask, training)
+        prediction = self.decoder.feed_forward(y, encoder_output, tf.math.maximum(padding_mask(y), look_ahead_mask(y)), x_mask, training)
         return prediction
 
     def loss_function(self, target, pred):
@@ -42,9 +45,8 @@ class Transformer(keras.Model, ABC):
         return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
 
     def learn(self, encoder_input, decoder_input, true_output, print_acc, reset_metrics_every=50):
-        if self.epoch_counter % reset_metrics_every == 0:
-            self.train_accuracy.reset_states()
-            self.train_loss.reset_states()
+        self.train_accuracy.reset_states()
+        self.train_loss.reset_states()
         encoder_input = tf.convert_to_tensor(encoder_input, dtype=tf.float32)
         decoder_input = tf.convert_to_tensor(decoder_input, dtype=tf.float32)
         true_output = tf.convert_to_tensor(true_output, dtype=tf.int64)
@@ -57,8 +59,10 @@ class Transformer(keras.Model, ABC):
         self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
         self.train_accuracy(self.accuracy_function(true_output, guess))
         self.train_loss(loss)
+        self.accuracies.append(self.get_acc())
+        self.losses_.append(self.get_loss())
         if print_acc:
-            print("loss: ", self.train_loss.result(), self.train_accuracy.result())
+            print("loss: ", self.get_loss_moving_avg(), "acc: ", self.get_acc_moving_avg())
         self.epoch_counter += 1
 
     def complete(self, input_, embeddings, max_output_len=40):
@@ -75,8 +79,8 @@ class Transformer(keras.Model, ABC):
             print(prediction, end=" ")
             decoder_output_list += [prediction]
             decoder_output_tokenize = tokenize(decoder_output_list, embeddings, self.padding_size)
-            if prediction == "<end>":
-                break
+            # if prediction == "<end>":
+            #     break
 
     def get_acc(self):
         return np.array(self.train_accuracy.result())
@@ -84,12 +88,15 @@ class Transformer(keras.Model, ABC):
     def get_loss(self):
         return np.array(self.train_loss.result())
 
+    def get_acc_moving_avg(self, window_size=50):
+        if len(self.accuracies) < window_size:
+            return 0
+        return sum(self.accuracies[-window_size:]) / window_size
+
+    def get_loss_moving_avg(self, window_size=50):
+        if len(self.losses_) < window_size:
+            return 0
+        return sum(self.losses_[-window_size:]) / window_size
+
     def __call__(self, *args, **kwargs):
         self.feed_forward(args[0], args[1])
-
-
-if __name__ == '__main__':
-    x = np.array([[np.random.random() for i in range(16)] for j in range(7)])
-    y = np.array([[np.random.random() for i in range(16)] for j in range(5)])
-    transformer = Transformer(16, 4, 100, 20)
-    print(transformer.feed_forward(x, y))
